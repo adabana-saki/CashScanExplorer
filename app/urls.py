@@ -2,6 +2,8 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from . import views
+from . import auth_views
+from . import subscription_views
 
 app_name = 'app'
 
@@ -9,6 +11,26 @@ app_name = 'app'
 urlpatterns = [
    path('', views.home, name='home'),
    path('get_updated_graph/', views.get_updated_graph, name='get_updated_graph'),
+]
+
+# Authentication URLs
+urlpatterns += [
+   path('signup/', auth_views.signup_view, name='signup'),
+   path('login/', auth_views.login_view, name='login'),
+   path('logout/', auth_views.logout_view, name='logout'),
+   path('profile/', auth_views.profile_view, name='profile'),
+   path('profile/update/', auth_views.update_profile, name='update_profile'),
+   path('api/usage-stats/', auth_views.usage_stats_api, name='usage_stats_api'),
+]
+
+# Subscription and Payment URLs
+urlpatterns += [
+   path('pricing/', subscription_views.pricing_view, name='pricing'),
+   path('create-checkout-session/', subscription_views.create_checkout_session, name='create_checkout_session'),
+   path('payment/success/', subscription_views.payment_success, name='payment_success'),
+   path('payment/cancel/', subscription_views.payment_cancel, name='payment_cancel'),
+   path('cancel-subscription/', subscription_views.cancel_subscription, name='cancel_subscription'),
+   path('webhook/stripe/', subscription_views.stripe_webhook, name='stripe_webhook'),
 ]
 
 # Feature pages

@@ -25,7 +25,8 @@ from django.views.decorators.cache import never_cache
 from django.conf import settings
 from dotenv import load_dotenv
 from .utils import DifyAPI
-from .models import ExchangeRate
+from .models import ExchangeRate, UsageStatistics, LearningProgress
+from .middlewares import check_feature_access, increment_feature_usage
 
 load_dotenv()
 
@@ -273,6 +274,19 @@ def video_feed(request, stream_id):
     if request.method != 'POST':
         return JsonResponse({"status": "error", "message": "GET method not supported"}, status=405)
 
+    # Check usage limits for authenticated users
+    if request.user.is_authenticated:
+        has_access, remaining, limit, message = check_feature_access(request.user, 'image_recognition')
+
+        if not has_access:
+            return JsonResponse({
+                'status': 'error',
+                'error': message,
+                'code': 'LIMIT_REACHED',
+                'limit': limit,
+                'upgrade_url': '/app/pricing/'
+            }, status=429)
+
     try:
         # Determine input type and get frame data
         if 'image' in request.FILES:
@@ -349,14 +363,26 @@ def video_feed(request, stream_id):
         # Convert processed frame to base64
         _, buffer = cv2.imencode('.jpg', frame)
         image_base64 = base64.b64encode(buffer).decode('utf-8')
-        
+
+        # Increment usage counter and track learning progress for authenticated users
+        if request.user.is_authenticated:
+            increment_feature_usage(request.user, 'image_recognition')
+
+            # Track learning progress
+            LearningProgress.objects.create(
+                user=request.user,
+                activity_type='image_recognized',
+                details={'predictions': len(processed_predictions)},
+                points_earned=3
+            )
+
         response_data = {
             "status": "success",
             "predictions": processed_predictions,
             "image": image_base64,
             "source_type": source_type
         }
-        
+
         return JsonResponse(response_data)
         
     except Exception as e:
@@ -540,6 +566,18 @@ def ask(request):
     Takes user message and returns AI response as a stream.
     """
     try:
+        # Check usage limits for authenticated users
+        if request.user.is_authenticated:
+            has_access, remaining, limit, message = check_feature_access(request.user, 'ai_chat')
+
+            if not has_access:
+                return JsonResponse({
+                    'error': message,
+                    'code': 'LIMIT_REACHED',
+                    'limit': limit,
+                    'upgrade_url': '/app/pricing/'
+                }, status=429)
+
         # Parse JSON request body
         data = json.loads(request.body)
         user_message = data.get('message')
@@ -561,6 +599,18 @@ def ask(request):
                 user=user_id,
                 stream=True
             )
+
+            # Increment usage counter for authenticated users
+            if request.user.is_authenticated:
+                increment_feature_usage(request.user, 'ai_chat')
+
+                # Track learning progress
+                LearningProgress.objects.create(
+                    user=request.user,
+                    activity_type='ai_chat_completed',
+                    details={'message': user_message[:100]},
+                    points_earned=5
+                )
 
             def generate():
                 """Generator function to stream API response"""
@@ -592,7 +642,7 @@ def ask(request):
             'error': 'Invalid JSON format',
             'details': str(e)
         }, status=400)
-    
+
     except Exception as e:
         logger.error(f"Unexpected error in ask endpoint: {e}")
         return JsonResponse({

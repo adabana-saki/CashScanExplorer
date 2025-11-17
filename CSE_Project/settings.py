@@ -9,6 +9,11 @@ load_dotenv()
 DIFY_API_KEY = os.getenv('DIFY_API_KEY')
 DIFY_APP_ID = os.getenv('DIFY_APP_ID')
 
+# Stripe payment configuration
+STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', '')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+
 # Set up base directory path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,6 +50,8 @@ MIDDLEWARE = [
    'django.contrib.auth.middleware.AuthenticationMiddleware',
    'django.contrib.messages.middleware.MessageMiddleware',
    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+   # Custom middleware for subscription management (disabled by default)
+   # 'app.middlewares.SubscriptionMiddleware',
 ]
 
 # Cache configuration
@@ -107,3 +114,12 @@ USE_I18N = True
 USE_TZ = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication settings
+LOGIN_URL = '/app/login/'
+LOGIN_REDIRECT_URL = '/app/'
+LOGOUT_REDIRECT_URL = '/app/'
+
+# Session settings
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_SAVE_EVERY_REQUEST = False
