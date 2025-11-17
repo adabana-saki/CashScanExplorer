@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from . import views
 from . import auth_views
 from . import subscription_views
+from . import game_views
 
 app_name = 'app'
 
@@ -40,6 +41,15 @@ urlpatterns += [
    path('money/', views.money, name='money'),
    path('financing_ai_chat/', views.financing_ai_chat, name='financing_ai_chat'),
    path('reference/', views.reference, name='reference'),
+]
+
+# Learning Games URLs
+urlpatterns += [
+   path('games/quiz/', game_views.currency_quiz, name='currency_quiz'),
+   path('games/quiz/generate/', game_views.generate_quiz_question, name='generate_quiz_question'),
+   path('games/quiz/submit/', game_views.submit_quiz_answer, name='submit_quiz_answer'),
+   path('games/comparison/', game_views.currency_comparison, name='currency_comparison'),
+   path('games/travel-budget/', game_views.travel_budget_game, name='travel_budget_game'),
 ]
 
 # API endpoints

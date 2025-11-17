@@ -27,6 +27,7 @@ from dotenv import load_dotenv
 from .utils import DifyAPI
 from .models import ExchangeRate, UsageStatistics, LearningProgress
 from .middlewares import check_feature_access, increment_feature_usage
+from .currencies import SUPPORTED_CURRENCIES, CURRENCY_CODES, get_currency_info, get_currency_symbol
 
 load_dotenv()
 
@@ -396,8 +397,13 @@ def video_feed(request, stream_id):
 def exchange_rate(request):
     """
     View for the exchange rate calculator page.
+    Now supports 15+ major currencies.
     """
-    return render(request, 'app/exchange_rate.html')
+    context = {
+        'currencies': SUPPORTED_CURRENCIES,
+        'currency_codes': CURRENCY_CODES,
+    }
+    return render(request, 'app/exchange_rate.html', context)
 
 @require_http_methods(["POST"])
 def convert_currency(request):
@@ -522,20 +528,24 @@ def get_exchange_rates(request):
 
 def money(request):
     """
-    View for displaying currency denominations page.
-    Contains lists of available denominations for JPY and TWD.
+    View for displaying currency information page.
+    Shows comprehensive information for all supported currencies.
     """
-    currency_types = {
-        'JPY': {
-            'denominations': [1, 5, 10, 50, 100, 500, 1000, 5000, 10000],
-            'button_id': 'yellow'
-        },
-        'TWD': {
-            'denominations': [1, 5, 10, 50, 100, 500, 1000],
-            'button_id': 'blue'
-        }
+    # Get selected currency from query params, default to JPY
+    selected_currency = request.GET.get('currency', 'JPY').upper()
+
+    # Validate currency code
+    if selected_currency not in CURRENCY_CODES:
+        selected_currency = 'JPY'
+
+    context = {
+        'currencies': SUPPORTED_CURRENCIES,
+        'currency_codes': CURRENCY_CODES,
+        'selected_currency': selected_currency,
+        'selected_info': get_currency_info(selected_currency),
     }
-    return render(request, 'app/money.html', {'currency_types': currency_types})
+
+    return render(request, 'app/money.html', context)
 
 def financing_ai_chat(request):
     """
