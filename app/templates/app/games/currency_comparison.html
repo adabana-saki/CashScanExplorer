@@ -1,0 +1,343 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block title %}Currency Comparison - Compare World Currencies{% endblock %}
+
+{% block extra_css %}
+<style>
+    .comparison-container {
+        max-width: 1200px;
+        margin: 50px auto;
+        padding: 30px;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .page-header h1 {
+        color: #2c3e50;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+
+    .selector-panel {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .selector-title {
+        font-size: 1.3em;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .currency-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .currency-chip {
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        font-size: 0.9em;
+    }
+
+    .currency-chip:hover {
+        border-color: #3498db;
+        background: #ebf5fb;
+    }
+
+    .currency-chip.selected {
+        border-color: #3498db;
+        background: #3498db;
+        color: white;
+    }
+
+    .currency-chip .flag {
+        font-size: 2em;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .compare-button {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.2em;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .compare-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .currency-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        border-top: 5px solid #3498db;
+    }
+
+    .currency-card .flag {
+        font-size: 3em;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .currency-card .name {
+        font-size: 1.5em;
+        font-weight: 600;
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .currency-card .code {
+        font-size: 1.2em;
+        color: #7f8c8d;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .currency-card .symbol {
+        font-size: 2.5em;
+        text-align: center;
+        margin: 20px 0;
+        color: #3498db;
+        font-weight: bold;
+    }
+
+    .info-section {
+        margin-top: 20px;
+    }
+
+    .info-section .label {
+        font-size: 0.9em;
+        color: #7f8c8d;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+
+    .info-section .value {
+        font-size: 1em;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        line-height: 1.6;
+    }
+
+    .denominations {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .denomination-badge {
+        padding: 5px 12px;
+        background: #ecf0f1;
+        border-radius: 20px;
+        font-size: 0.9em;
+        color: #2c3e50;
+    }
+
+    .fun-facts {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #3498db;
+    }
+
+    .fun-facts .title {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #2c3e50;
+    }
+
+    .fun-facts ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .fun-facts li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+        color: #555;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #7f8c8d;
+    }
+
+    .empty-state .icon {
+        font-size: 4em;
+        margin-bottom: 20px;
+    }
+
+    .empty-state .text {
+        font-size: 1.2em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="comparison-container">
+    <div class="page-header">
+        <h1>🌍 Currency Comparison</h1>
+        <p>Compare different currencies side by side</p>
+    </div>
+
+    <div class="selector-panel">
+        <div class="selector-title">Select currencies to compare (Choose up to 4)</div>
+        <div class="currency-selector">
+            {% for code in currency_codes %}
+            <div class="currency-chip" data-code="{{ code }}" onclick="toggleCurrency('{{ code }}')">
+                <span class="flag">{{ currencies|dict_get:code|dict_get:'flag' }}</span>
+                <div>{{ code }}</div>
+                <div style="font-size: 0.8em;">{{ currencies|dict_get:code|dict_get:'name' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="compare-button" onclick="updateComparison()">Compare Selected Currencies</button>
+    </div>
+
+    <div class="comparison-grid" id="comparisonGrid">
+        {% if selected_currencies %}
+            {% for curr in selected_currencies %}
+            <div class="currency-card">
+                <div class="flag">{{ curr.flag }}</div>
+                <div class="name">{{ curr.name }}</div>
+                <div class="code">{{ curr.country }}</div>
+                <div class="symbol">{{ curr.symbol }}</div>
+
+                <div class="info-section">
+                    <div class="label">Region</div>
+                    <div class="value">{{ curr.region }}</div>
+                </div>
+
+                {% if curr.denominations %}
+                <div class="info-section">
+                    <div class="label">Coins</div>
+                    <div class="denominations">
+                        {% for coin in curr.denominations.coins %}
+                        <span class="denomination-badge">{{ curr.symbol }}{{ coin }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="label">Bills</div>
+                    <div class="denominations">
+                        {% for bill in curr.denominations.bills %}
+                        <span class="denomination-badge">{{ curr.symbol }}{{ bill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if curr.fun_facts %}
+                <div class="fun-facts">
+                    <div class="title">💡 Fun Facts</div>
+                    <ul>
+                        {% for fact in curr.fun_facts %}
+                        <li>{{ fact }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if curr.has_image_recognition %}
+                <div class="info-section">
+                    <div class="label">✨ Image Recognition Available</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <div class="icon">🔍</div>
+            <div class="text">Select currencies above to compare them</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+let selectedCurrencies = new Set({{ selected_codes|safe }});
+const maxSelection = 4;
+
+// Initialize selected currencies from URL
+window.addEventListener('DOMContentLoaded', () => {
+    updateSelectionUI();
+});
+
+function toggleCurrency(code) {
+    if (selectedCurrencies.has(code)) {
+        selectedCurrencies.delete(code);
+    } else {
+        if (selectedCurrencies.size >= maxSelection) {
+            alert(`You can only compare up to ${maxSelection} currencies at once.`);
+            return;
+        }
+        selectedCurrencies.add(code);
+    }
+    updateSelectionUI();
+}
+
+function updateSelectionUI() {
+    document.querySelectorAll('.currency-chip').forEach(chip => {
+        const code = chip.dataset.code;
+        if (selectedCurrencies.has(code)) {
+            chip.classList.add('selected');
+        } else {
+            chip.classList.remove('selected');
+        }
+    });
+}
+
+function updateComparison() {
+    if (selectedCurrencies.size === 0) {
+        alert('Please select at least one currency to compare.');
+        return;
+    }
+
+    const codes = Array.from(selectedCurrencies);
+    const params = new URLSearchParams();
+    codes.forEach(code => params.append('codes', code));
+
+    window.location.href = `/app/games/comparison/?${params.toString()}`;
+}
+
+// Custom filter for Django template (add to template filters if needed)
+</script>
+
+{% load custom_filters %}
+{% endblock %}

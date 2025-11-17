@@ -1,0 +1,493 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block title %}Travel Budget Simulator - Learn Currency Exchange{% endblock %}
+
+{% block extra_css %}
+<style>
+    .simulator-container {
+        max-width: 1000px;
+        margin: 50px auto;
+        padding: 30px;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .page-header h1 {
+        color: #2c3e50;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+
+    .game-panel {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .travel-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .travel-card {
+        padding: 20px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .travel-card.destination {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .travel-card .label {
+        font-size: 0.9em;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+
+    .travel-card .value {
+        font-size: 2em;
+        font-weight: bold;
+    }
+
+    .budget-display {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .budget-display .label {
+        font-size: 1em;
+        color: #7f8c8d;
+        margin-bottom: 10px;
+    }
+
+    .budget-display .amount {
+        font-size: 3em;
+        font-weight: bold;
+        color: #27ae60;
+        margin-bottom: 10px;
+    }
+
+    .budget-display .converted {
+        font-size: 1.5em;
+        color: #3498db;
+    }
+
+    .shopping-list {
+        margin-bottom: 30px;
+    }
+
+    .shopping-list .title {
+        font-size: 1.3em;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #2c3e50;
+    }
+
+    .item-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+
+    .item-card:hover {
+        border-color: #3498db;
+        box-shadow: 0 3px 10px rgba(52, 152, 219, 0.2);
+    }
+
+    .item-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .item-icon {
+        font-size: 2.5em;
+    }
+
+    .item-details .name {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .item-details .description {
+        font-size: 0.9em;
+        color: #7f8c8d;
+    }
+
+    .item-price {
+        text-align: right;
+    }
+
+    .item-price .local {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .item-price .home {
+        font-size: 1em;
+        color: #7f8c8d;
+    }
+
+    .buy-button {
+        padding: 10px 25px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .buy-button:hover {
+        background: #229954;
+        transform: scale(1.05);
+    }
+
+    .buy-button:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+
+    .btn {
+        padding: 15px 40px;
+        font-size: 1.1em;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: #ecf0f1;
+        color: #2c3e50;
+    }
+
+    .btn-secondary:hover {
+        background: #bdc3c7;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 40px;
+        border-radius: 15px;
+        max-width: 500px;
+        text-align: center;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-icon {
+        font-size: 4em;
+        margin-bottom: 20px;
+    }
+
+    .modal-title {
+        font-size: 1.8em;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #2c3e50;
+    }
+
+    .modal-text {
+        font-size: 1.1em;
+        color: #7f8c8d;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="simulator-container">
+    <div class="page-header">
+        <h1>✈️ Travel Budget Simulator</h1>
+        <p>Learn about currency exchange through virtual travel!</p>
+    </div>
+
+    <div class="game-panel">
+        <div class="travel-info">
+            <div class="travel-card">
+                <div class="label">From</div>
+                <div class="value" id="homeCountry">🇯🇵 Japan</div>
+                <div id="homeCurrency">JPY</div>
+            </div>
+            <div class="travel-card destination">
+                <div class="label">To</div>
+                <div class="value" id="destCountry">🇺🇸 USA</div>
+                <div id="destCurrency">USD</div>
+            </div>
+        </div>
+
+        <div class="budget-display">
+            <div class="label">Your Travel Budget</div>
+            <div class="amount" id="remainingBudget">¥100,000</div>
+            <div class="converted" id="convertedBudget">≈ $900.00 USD</div>
+        </div>
+
+        <div class="shopping-list">
+            <div class="title">🛍️ Things to Buy</div>
+            <div id="itemsList"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="resetGame()">🔄 New Trip</button>
+            <button class="btn btn-secondary" onclick="window.location.href='/app/'">🏠 Home</button>
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Modal -->
+<div class="modal" id="purchaseModal">
+    <div class="modal-content">
+        <div class="modal-icon">🎉</div>
+        <div class="modal-title">Purchase Successful!</div>
+        <div class="modal-text" id="modalText"></div>
+        <button class="btn btn-primary" onclick="closePurchaseModal()">Continue Shopping</button>
+    </div>
+</div>
+
+<!-- Game Over Modal -->
+<div class="modal" id="gameOverModal">
+    <div class="modal-content">
+        <div class="modal-icon">🏆</div>
+        <div class="modal-title">Trip Complete!</div>
+        <div class="modal-text" id="gameOverText"></div>
+        <button class="btn btn-primary" onclick="resetGame()">Start New Trip</button>
+    </div>
+</div>
+
+<script>
+const CURRENCIES = {{ currencies|json_dumps|safe }};
+const CURRENCY_CODES = {{ currency_codes|json_dumps|safe }};
+
+// Game state
+let homeCurrency = 'JPY';
+let destCurrency = 'USD';
+let initialBudget = 100000;
+let remainingBudget = 100000;
+let exchangeRate = 0.0067; // JPY to USD
+let purchasedItems = [];
+
+// Sample items to buy
+const ITEMS = {
+    'USD': [
+        { icon: '🍔', name: 'Burger Meal', description: 'Classic American burger', price: 12, points: 5 },
+        { icon: '👕', name: 'T-Shirt', description: 'Souvenir t-shirt', price: 25, points: 10 },
+        { icon: '🎫', name: 'Museum Ticket', description: 'Metropolitan Museum', price: 30, points: 15 },
+        { icon: '🏨', name: 'Hotel Night', description: 'Mid-range hotel', price: 150, points: 50 },
+        { icon: '🎢', name: 'Theme Park', description: 'Full day pass', price: 120, points: 40 }
+    ],
+    'EUR': [
+        { icon: '☕', name: 'Café Latte', description: 'French café', price: 4.5, points: 5 },
+        { icon: '🥐', name: 'Croissant', description: 'Fresh baked', price: 2.5, points: 3 },
+        { icon: '🎨', name: 'Louvre Ticket', description: 'Museum entry', price: 17, points: 15 },
+        { icon: '🗼', name: 'Eiffel Tower', description: 'Top floor', price: 26, points: 20 },
+        { icon: '🏨', name: 'Hotel Night', description: 'City center', price: 120, points: 40 }
+    ],
+    'GBP': [
+        { icon: '🍺', name: 'Pub Meal', description: 'Fish & chips', price: 15, points: 8 },
+        { icon: '🎭', name: 'Theatre Ticket', description: 'West End show', price: 80, points: 30 },
+        { icon: '🚇', name: 'Travel Card', description: 'Day pass', price: 14, points: 5 },
+        { icon: '🏰', name: 'Castle Tour', description: 'Guided tour', price: 35, points: 20 },
+        { icon: '☕', name: 'Afternoon Tea', description: 'Traditional', price: 45, points: 15 }
+    ]
+};
+
+// Initialize game
+window.addEventListener('DOMContentLoaded', () => {
+    resetGame();
+});
+
+function resetGame() {
+    // Random currencies
+    homeCurrency = CURRENCY_CODES[Math.floor(Math.random() * CURRENCY_CODES.length)];
+    const availableDest = CURRENCY_CODES.filter(c => c !== homeCurrency && ITEMS[c]);
+    destCurrency = availableDest[Math.floor(Math.random() * availableDest.length)];
+
+    // Set budget based on currency
+    const budgetMap = {
+        'JPY': 100000, 'USD': 1000, 'EUR': 900,
+        'GBP': 800, 'CNY': 7000, 'KRW': 1200000
+    };
+    initialBudget = budgetMap[homeCurrency] || 1000;
+    remainingBudget = initialBudget;
+    purchasedItems = [];
+
+    updateUI();
+    loadItems();
+}
+
+async function updateUI() {
+    const homeCurr = CURRENCIES[homeCurrency];
+    const destCurr = CURRENCIES[destCurrency];
+
+    document.getElementById('homeCountry').textContent = `${homeCurr.flag} ${homeCurr.country}`;
+    document.getElementById('homeCurrency').textContent = homeCurrency;
+    document.getElementById('destCountry').textContent = `${destCurr.flag} ${destCurr.country}`;
+    document.getElementById('destCurrency').textContent = destCurrency;
+
+    // Get exchange rate
+    try {
+        const response = await fetch('/app/get_exchange_rates/');
+        const data = await response.json();
+        // Calculate rate (simplified)
+        exchangeRate = 1 / 100; // Placeholder
+    } catch (error) {
+        console.error('Error fetching exchange rate:', error);
+    }
+
+    document.getElementById('remainingBudget').textContent =
+        `${homeCurr.symbol}${remainingBudget.toLocaleString()}`;
+
+    const converted = remainingBudget * exchangeRate;
+    document.getElementById('convertedBudget').textContent =
+        `≈ ${destCurr.symbol}${converted.toFixed(2)} ${destCurrency}`;
+}
+
+function loadItems() {
+    const items = ITEMS[destCurrency] || ITEMS['USD'];
+    const destCurr = CURRENCIES[destCurrency];
+    const homeCurr = CURRENCIES[homeCurrency];
+    const itemsList = document.getElementById('itemsList');
+
+    itemsList.innerHTML = items.map((item, index) => {
+        const priceInHome = item.price / exchangeRate;
+        const canAfford = remainingBudget >= priceInHome;
+
+        return `
+            <div class="item-card">
+                <div class="item-info">
+                    <div class="item-icon">${item.icon}</div>
+                    <div class="item-details">
+                        <div class="name">${item.name}</div>
+                        <div class="description">${item.description}</div>
+                    </div>
+                </div>
+                <div class="item-info">
+                    <div class="item-price">
+                        <div class="local">${destCurr.symbol}${item.price}</div>
+                        <div class="home">${homeCurr.symbol}${priceInHome.toFixed(0)}</div>
+                    </div>
+                    <button class="buy-button" onclick="buyItem(${index})" ${!canAfford ? 'disabled' : ''}>
+                        ${canAfford ? 'Buy' : 'Too expensive'}
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function buyItem(index) {
+    const items = ITEMS[destCurrency] || ITEMS['USD'];
+    const item = items[index];
+    const priceInHome = item.price / exchangeRate;
+
+    if (remainingBudget >= priceInHome) {
+        remainingBudget -= priceInHome;
+        purchasedItems.push(item);
+
+        const destCurr = CURRENCIES[destCurrency];
+        const homeCurr = CURRENCIES[homeCurrency];
+
+        document.getElementById('modalText').innerHTML =
+            `You bought <strong>${item.name}</strong> for ${destCurr.symbol}${item.price} (${homeCurr.symbol}${priceInHome.toFixed(0)})<br>
+            Earned ${item.points} points!`;
+
+        document.getElementById('purchaseModal').classList.add('show');
+
+        updateUI();
+        loadItems();
+
+        // Check if budget depleted
+        if (remainingBudget < 100) {
+            setTimeout(endGame, 2000);
+        }
+    }
+}
+
+function closePurchaseModal() {
+    document.getElementById('purchaseModal').classList.remove('show');
+}
+
+function endGame() {
+    const totalPoints = purchasedItems.reduce((sum, item) => sum + item.points, 0);
+    const totalSpent = initialBudget - remainingBudget;
+
+    document.getElementById('gameOverText').innerHTML =
+        `Great trip! You visited ${CURRENCIES[destCurrency].country}.<br><br>
+        <strong>Items purchased:</strong> ${purchasedItems.length}<br>
+        <strong>Total spent:</strong> ${CURRENCIES[homeCurrency].symbol}${totalSpent.toFixed(0)}<br>
+        <strong>Points earned:</strong> ${totalPoints}`;
+
+    document.getElementById('gameOverModal').classList.add('show');
+}
+</script>
+{% endblock %}
