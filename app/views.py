@@ -9,13 +9,6 @@ import pytz
 import cv2
 import json
 import numpy as np
-import pandas as pd
-import yfinance as yf
-from roboflow import Roboflow
-from matplotlib import pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib
-matplotlib.use('Agg')
 
 from django.shortcuts import render
 from django.http import StreamingHttpResponse, JsonResponse
@@ -24,10 +17,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
 from django.conf import settings
 from dotenv import load_dotenv
+
 from .utils import DifyAPI
 from .models import ExchangeRate, UsageStatistics, LearningProgress
 from .middlewares import check_feature_access, increment_feature_usage
 from .currencies import SUPPORTED_CURRENCIES, CURRENCY_CODES, get_currency_info, get_currency_symbol
+from .services.exchange_rate_service import ExchangeRateService, GraphService
+from .services.image_recognition_service import ImageRecognitionService
+from .validators import CurrencyValidator, ImageValidator
 
 load_dotenv()
 
@@ -38,143 +35,8 @@ dify_api = DifyAPI()
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Initialize Roboflow for image recognition
-# This service is used to detect and classify objects in images
-try:
-    rf = Roboflow(api_key=os.getenv('ROBOFLOW_API_KEY'))
-    project = rf.workspace().project("jpytwd")
-    model = project.version(1).model
-    logger.info("Roboflow model loaded successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize Roboflow: {e}")
-    raise
-
-# Define a data class to store exchange rate information
-@dataclass
-class ExchangeRateData:
-    graph_data: str          # Base64 encoded graph image
-    latest_rate: float       # Most recent exchange rate
-    last_updated: str        # Timestamp of last update
-
-class ExchangeRateService:
-    @staticmethod
-    def get_exchange_rate_data() -> Optional[List[ExchangeRate]]:
-        """
-        Fetches one year of TWD/JPY exchange rate data from Yahoo Finance
-        and stores it in the database.
-        Returns a list of ExchangeRate objects or None if the fetch fails.
-        """
-        try:
-            # Set up date range for the past year in Japan timezone
-            tst = pytz.timezone('Asia/Taipei')
-            end = datetime.now(tst).date()
-            start = end - timedelta(days=365)
-            currency_pair = 'TWDJPY'
-            
-            # Download exchange rate data from Yahoo Finance
-            df = yf.download(f'{currency_pair}=X', start=start, end=end)
-            if df.empty:
-                return None
-            
-            # Clear existing data for this date range
-            ExchangeRate.objects.filter(
-                currency_pair=currency_pair,
-                date__gte=start
-            ).delete()
-            
-            # Convert the downloaded data into ExchangeRate objects
-            bulk_create_list = [
-                ExchangeRate(
-                    date=index.tz_localize('UTC').tz_convert('Asia/Taipei').date() 
-                        if isinstance(index, pd.Timestamp) and index.tz is None 
-                        else index.tz_convert('Asia/Taipei').date() 
-                        if isinstance(index, pd.Timestamp) 
-                        else index.date(),
-                    rate=float(row['Close'].iloc[0]) if isinstance(row['Close'], pd.Series) 
-                        else float(row['Close']),
-                    currency_pair=currency_pair
-                )
-                for index, row in df.iterrows()
-            ]
-            
-            if not bulk_create_list:
-                return None
-                
-            # Save all exchange rates to database at once
-            ExchangeRate.objects.bulk_create(bulk_create_list)
-            
-            # Return the saved exchange rates ordered by date
-            return ExchangeRate.objects.filter(
-                currency_pair=currency_pair,
-                date__gte=start
-            ).order_by('date')
-            
-        except Exception as e:
-            logger.error(f"Error in get_exchange_rate_data: {e}", exc_info=True)
-            return None
-
-class GraphService:
-    @staticmethod
-    def generate_graph(rates: List[ExchangeRate]) -> Tuple[Optional[str], Optional[float], Optional[str]]:
-        """
-        Generates a graph of exchange rates using matplotlib.
-        Returns a tuple of (base64 encoded graph image, latest rate, timestamp).
-        """
-        try:
-            # Clear any existing plots
-            plt.clf()
-            plt.close('all')
-            
-            # Create new figure and axis for the graph
-            fig, ax = plt.subplots(figsize=(10, 5), dpi=100)
-            tst = pytz.timezone('Asia/Taipei')
-            current_datetime = datetime.now(tst).strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Extract dates and rates from the data
-            dates = [rate.date for rate in rates]
-            values = [float(rate.rate) if isinstance(rate.rate, pd.Series) else rate.rate 
-                     for rate in rates]
-            
-            # Plot the exchange rate data
-            ax.plot(dates, values, label='TWD/JPY', color='#4CAF50', linewidth=2)
-            ax.set_title('TWD/JPY Exchange Rate', fontsize=14, pad=20)
-            ax.set_xlabel('Date', fontsize=12)
-            ax.set_ylabel('Exchange Rate (TWD/JPY)', fontsize=12)
-            ax.grid(True, linestyle='--', alpha=0.7)
-            ax.legend(loc='upper right')
-            
-            # Format the x-axis dates
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
-            plt.tight_layout()
-            
-            # Get the latest exchange rate
-            latest_rate = float(rates.last().rate.iloc[0] if isinstance(rates.last().rate, pd.Series)
-                              else rates.last().rate)
-            
-            # Add text annotations to the graph
-            plt.figtext(0.05, 0.95, f'1 TWD = {latest_rate:.2f} JPY', 
-                       fontsize=12, ha='left', va='top')
-            plt.figtext(0.95, 0.02, f'Last updated: {current_datetime} (TST)', 
-                       fontsize=10, ha='right')
-            
-            # Convert the graph to a base64 encoded string
-            buffer = io.BytesIO()
-            plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100)
-            buffer.seek(0)
-            graph = base64.b64encode(buffer.getvalue()).decode('utf-8')
-            
-            return graph, latest_rate, current_datetime
-        
-        except Exception as e:
-            logger.error(f"Error generating graph: {e}")
-            return None, None, None
-        
-        finally:
-            # Clean up matplotlib resources
-            plt.close('all')
-            if 'buffer' in locals():
-                buffer.close()
+# Initialize image recognition service
+image_recognition_service = ImageRecognitionService()
 
 def home(request):
     """
@@ -293,6 +155,16 @@ def video_feed(request, stream_id):
         if 'image' in request.FILES:
             # Handle image file upload
             image_file = request.FILES['image']
+
+            # Validate image file
+            is_valid, error_msg = ImageValidator.validate_image_file(image_file)
+            if not is_valid:
+                return JsonResponse({
+                    "status": "error",
+                    "message": error_msg,
+                    "type": "validation_error"
+                }, status=400)
+
             image_data = image_file.read()
             nparr = np.frombuffer(image_data, np.uint8)
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -300,69 +172,53 @@ def video_feed(request, stream_id):
         else:
             # Handle video frame data
             frame_data = request.body
+
+            # Validate image data
+            is_valid, error_msg = ImageValidator.validate_image_data(frame_data)
+            if not is_valid:
+                return JsonResponse({
+                    "status": "error",
+                    "message": error_msg,
+                    "type": "validation_error"
+                }, status=400)
+
             nparr = np.frombuffer(frame_data, np.uint8)
             frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             source_type = 'camera'
-        
+
         if frame is None:
             raise ValueError("Invalid frame data")
-        
-        # Run object detection on the frame
-        prediction_result = model.predict(frame, confidence=40, overlap=30).json()
-        
-        # Debug log for predictions
-        logger.debug(f"Raw predictions for {source_type}: {prediction_result}")
-        
-        # Process and visualize detection results
-        processed_predictions = []
-        for detection in prediction_result['predictions']:
-            # Extract class name and confidence
-            class_name = detection['class']
-            confidence = detection['confidence']
-            
-            # Calculate bounding box coordinates
-            x = int(detection['x'] - detection['width'] / 2)
-            y = int(detection['y'] - detection['height'] / 2)
-            width = int(detection['width'])
-            height = int(detection['height'])
-            
-            # Draw rectangle and label on the frame
-            cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 255, 0), 2)
-            label_text = f"{class_name} ({confidence:.2f})"
-            cv2.putText(frame, 
-                       label_text, 
-                       (x, y - 10), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 
-                       0.5, (0, 255, 0), 2)
-            
-            # Clean and normalize the class name for TWD format
-            if isinstance(class_name, str):
-                if 'twd' in class_name.lower():
-                    try:
-                        class_name = class_name.replace('-', '')
-                        if '_' not in class_name:
-                            number = ''.join(filter(str.isdigit, class_name))
-                            class_name = f"twd_{number}"
-                    except Exception as e:
-                        logger.error(f"Error processing TWD class name: {e}")
-            
-            # Store detection results
-            processed_prediction = {
-                "class": class_name,
-                "confidence": confidence,
-                "x": x,
-                "y": y,
-                "width": width,
-                "height": height,
-                "source": source_type
-            }
-            processed_predictions.append(processed_prediction)
-            
-            # Debug log for each processed prediction
-            logger.debug(f"Processed prediction: {processed_prediction}")
-        
-        # Convert processed frame to base64
-        _, buffer = cv2.imencode('.jpg', frame)
+
+        # Use image recognition service to detect currency
+        detection_result = image_recognition_service.detect_currency(frame, confidence_threshold=0.4)
+
+        if not detection_result:
+            return JsonResponse({
+                "status": "success",
+                "predictions": [],
+                "image": base64.b64encode(cv2.imencode('.jpg', frame)[1]).decode('utf-8'),
+                "source_type": source_type,
+                "message": "No currency detected"
+            })
+
+        # Annotate the image with detection results
+        annotated_frame = image_recognition_service.annotate_image(frame, detection_result)
+
+        # Convert detection result to the expected format
+        processed_predictions = [{
+            "class": detection_result.currency_code or "unknown",
+            "confidence": detection_result.confidence,
+            "x": detection_result.bbox[0] if detection_result.bbox else 0,
+            "y": detection_result.bbox[1] if detection_result.bbox else 0,
+            "width": detection_result.bbox[2] if detection_result.bbox else 0,
+            "height": detection_result.bbox[3] if detection_result.bbox else 0,
+            "source": source_type,
+            "denomination": detection_result.denomination,
+            "method": detection_result.detection_method
+        }]
+
+        # Convert annotated frame to base64
+        _, buffer = cv2.imencode('.jpg', annotated_frame)
         image_base64 = base64.b64encode(buffer).decode('utf-8')
 
         # Increment usage counter and track learning progress for authenticated users
@@ -373,7 +229,11 @@ def video_feed(request, stream_id):
             LearningProgress.objects.create(
                 user=request.user,
                 activity_type='image_recognized',
-                details={'predictions': len(processed_predictions)},
+                details={
+                    'predictions': len(processed_predictions),
+                    'currency': detection_result.currency_code,
+                    'method': detection_result.detection_method
+                },
                 points_earned=3
             )
 
@@ -385,7 +245,7 @@ def video_feed(request, stream_id):
         }
 
         return JsonResponse(response_data)
-        
+
     except Exception as e:
         logger.error(f"Error processing {source_type if 'source_type' in locals() else 'frame'}: {e}", exc_info=True)
         return JsonResponse({
@@ -417,27 +277,22 @@ def convert_currency(request):
         JsonResponse with converted amount, exchange rate and formatted strings
     """
     try:
-        # Validate if all required parameters exist in the request
-        if not all(key in request.POST for key in ['amount', 'from_currency', 'to_currency']):
-            return JsonResponse({
-                'error': 'Missing required parameters'
-            }, status=400)
+        # Extract parameters
+        amount = request.POST.get('amount')
+        from_currency = request.POST.get('from_currency')
+        to_currency = request.POST.get('to_currency')
 
-        # Convert and validate input parameters
-        try:
-            amount = float(request.POST.get('amount'))
-            from_currency = request.POST.get('from_currency')
-            to_currency = request.POST.get('to_currency')
-        except ValueError:
-            return JsonResponse({
-                'error': 'Invalid amount format'
-            }, status=400)
+        # Validate conversion request
+        is_valid, error_msg = CurrencyValidator.validate_conversion_request(
+            amount, from_currency, to_currency
+        )
+        if not is_valid:
+            return JsonResponse({'error': error_msg}, status=400)
 
-        # Check if amount is positive
-        if amount <= 0:
-            return JsonResponse({
-                'error': 'Amount must be greater than 0'
-            }, status=400)
+        # Convert to proper types
+        amount = float(amount)
+        from_currency = from_currency.upper()
+        to_currency = to_currency.upper()
 
         logger.info(f"Converting {amount} {from_currency} to {to_currency}")
 
@@ -452,78 +307,31 @@ def convert_currency(request):
                 'conversion_time': current_time
             })
 
-        # Get exchange rate from Yahoo Finance API
-        try:
-            ticker = f"{from_currency}{to_currency}=X"
-            df = yf.download(ticker, period="1d")
-            
-            if df.empty:
-                return JsonResponse({
-                    'error': 'Failed to fetch exchange rate'
-                }, status=400)
+        # Use exchange rate service to perform conversion
+        conversion_result = ExchangeRateService.convert_currency(
+            amount, from_currency, to_currency
+        )
 
-            # Calculate converted amount using latest exchange rate
-            current_rate = float(df['Close'].iloc[-1])
-            result = amount * current_rate
-            
-            # Get current time in Taipei timezone
-            current_time = datetime.now(pytz.timezone('Asia/Taipei')).strftime("%Y-%m-%d %H:%M:%S")
-
+        if not conversion_result:
             return JsonResponse({
-                'result': round(result, 2),
-                'rate': round(current_rate, 4),
-                'formatted_result': f"{amount:,.2f} {from_currency} = {result:,.2f} {to_currency}",
-                'formatted_rate': f"1 {from_currency} = {current_rate:.4f} {to_currency}",
-                'conversion_time': current_time
-            })
-
-        except Exception as e:
-            logger.error(f"Yahoo Finance error: {str(e)}")
-            return JsonResponse({
-                'error': 'Failed to fetch exchange rate'
+                'error': 'Failed to fetch exchange rate. Please try again.'
             }, status=400)
 
+        # Get current time in Taipei timezone
+        current_time = datetime.now(pytz.timezone('Asia/Taipei')).strftime("%Y-%m-%d %H:%M:%S")
+
+        return JsonResponse({
+            'result': conversion_result['result'],
+            'rate': conversion_result['rate'],
+            'formatted_result': f"{amount:,.2f} {from_currency} = {conversion_result['result']:,.2f} {to_currency}",
+            'formatted_rate': f"1 {from_currency} = {conversion_result['rate']:.4f} {to_currency}",
+            'conversion_time': current_time
+        })
+
     except Exception as e:
-        logger.error(f"Conversion error: {str(e)}")
+        logger.error(f"Conversion error: {str(e)}", exc_info=True)
         return JsonResponse({
             'error': 'An unexpected error occurred'
-        }, status=500)
-
-def get_exchange_rates(request):
-    try:
-        currency_pairs = ['TWDJPY=X', 'JPYTWD=X']
-        rates = {}
-        
-        for pair in currency_pairs:
-            data = yf.download(pair, period='1d')
-            if not data.empty:
-                # Convert Series to float if necessary
-                close_price = data['Close'].iloc[-1]
-                rates[pair.replace('=X', '')] = float(close_price) if hasattr(close_price, 'iloc') else close_price
-
-        if not rates:
-            return JsonResponse({'error': 'Failed to fetch exchange rates'}, status=400)
-
-        # Get current time in Taiwan timezone
-        tst = pytz.timezone('Asia/Taipei')
-        current_time = datetime.now(tst).strftime("%Y-%m-%d %H:%M:%S")
-
-        response_data = {
-            'rates': {
-                'JPY_TWD': rates.get('JPYTWD', 0),
-                'TWD_JPY': rates.get('TWDJPY', 0)
-            },
-            'last_updated': current_time
-        }
-
-        logger.info(f"Exchange rates fetched successfully: {response_data}")
-        return JsonResponse(response_data)
-
-    except Exception as e:
-        logger.error(f"Error fetching exchange rates: {str(e)}")
-        return JsonResponse({
-            'error': 'Failed to fetch exchange rates',
-            'details': str(e)
         }, status=500)
 
 def money(request):
@@ -534,8 +342,10 @@ def money(request):
     # Get selected currency from query params, default to JPY
     selected_currency = request.GET.get('currency', 'JPY').upper()
 
-    # Validate currency code
-    if selected_currency not in CURRENCY_CODES:
+    # Validate currency code using validator
+    is_valid, error_msg = CurrencyValidator.validate_currency_code(selected_currency)
+    if not is_valid:
+        logger.warning(f"Invalid currency code requested: {selected_currency}, defaulting to JPY")
         selected_currency = 'JPY'
 
     context = {

@@ -61,12 +61,13 @@ def create_checkout_session(request):
         # Get the plan
         plan = SubscriptionPlan.objects.get(plan_type=plan_type, is_active=True)
 
-        # Create or get Stripe customer
+        # Optimize: Use select_related to get subscription and avoid extra query
         user = request.user
         try:
-            subscription = user.subscription
+            subscription = Subscription.objects.select_related('plan').get(user=user)
             stripe_customer_id = subscription.stripe_customer_id
         except Subscription.DoesNotExist:
+            subscription = None
             stripe_customer_id = None
 
         if not stripe_customer_id:

@@ -122,7 +122,10 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     """User profile and dashboard view"""
-    user = request.user
+    # Optimize: Use select_related to fetch related objects in a single query
+    user = User.objects.select_related('profile').prefetch_related(
+        'learning_progress', 'achievements'
+    ).get(pk=request.user.pk)
 
     try:
         profile = user.profile
@@ -130,8 +133,9 @@ def profile_view(request):
         # Create profile if it doesn't exist
         profile = UserProfile.objects.create(user=user)
 
+    # Optimize: Use select_related for subscription and plan
     try:
-        subscription = user.subscription
+        subscription = Subscription.objects.select_related('plan').get(user=user)
     except Subscription.DoesNotExist:
         # Assign free plan if no subscription exists
         free_plan = SubscriptionPlan.objects.get(plan_type='free')
@@ -154,21 +158,25 @@ def profile_view(request):
         'image_recognition': plan.image_recognition_limit,
     }
 
-    # Get learning progress
-    learning_progress = user.learning_progress.all()[:10]
+    # Get learning progress (already prefetched)
+    learning_progress_list = list(user.learning_progress.all()[:10])
 
-    # Get achievements
+    # Get achievements (already prefetched)
     achievements = user.achievements.all()[:10]
 
-    # Total points
-    total_points = sum([lp.points_earned for lp in user.learning_progress.all()])
+    # Optimize: Calculate total points from the prefetched learning_progress
+    # Use aggregate to calculate sum efficiently
+    from django.db.models import Sum
+    total_points = user.learning_progress.aggregate(
+        total=Sum('points_earned')
+    )['total'] or 0
 
     context = {
         'profile': profile,
         'subscription': subscription,
         'usage_stats': usage_stats,
         'limits': limits,
-        'learning_progress': learning_progress,
+        'learning_progress': learning_progress_list,
         'achievements': achievements,
         'total_points': total_points,
     }
