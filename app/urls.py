@@ -5,6 +5,7 @@ from . import views
 from . import auth_views
 from . import subscription_views
 from . import game_views
+from . import teacher_views
 
 app_name = 'app'
 
@@ -50,6 +51,30 @@ urlpatterns += [
    path('games/quiz/submit/', game_views.submit_quiz_answer, name='submit_quiz_answer'),
    path('games/comparison/', game_views.currency_comparison, name='currency_comparison'),
    path('games/travel-budget/', game_views.travel_budget_game, name='travel_budget_game'),
+]
+
+# Teacher URLs (Phase 1)
+urlpatterns += [
+   # Dashboard
+   path('teacher/dashboard/', teacher_views.teacher_dashboard, name='teacher_dashboard'),
+
+   # Classroom Management
+   path('teacher/classrooms/', teacher_views.classroom_list, name='teacher_classroom_list'),
+   path('teacher/classrooms/create/', teacher_views.classroom_create, name='teacher_classroom_create'),
+   path('teacher/classrooms/<int:classroom_id>/', teacher_views.classroom_detail, name='teacher_classroom_detail'),
+
+   # Assignment Management
+   path('teacher/assignments/', teacher_views.assignment_list, name='teacher_assignment_list'),
+   path('teacher/assignments/create/', teacher_views.assignment_create, name='teacher_assignment_create'),
+   path('teacher/assignments/<int:assignment_id>/edit/', teacher_views.assignment_edit, name='teacher_assignment_edit'),
+   path('teacher/assignments/<int:assignment_id>/add-question/', teacher_views.assignment_add_question, name='teacher_assignment_add_question'),
+
+   # Grading
+   path('teacher/grading/', teacher_views.grading_queue, name='teacher_grading_queue'),
+   path('teacher/grading/<int:submission_id>/', teacher_views.grade_submission, name='teacher_grade_submission'),
+
+   # Student Progress
+   path('teacher/classrooms/<int:classroom_id>/students/<int:student_id>/', teacher_views.student_progress, name='teacher_student_progress'),
 ]
 
 # API endpoints
