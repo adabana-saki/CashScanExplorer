@@ -37,27 +37,14 @@
             <div class="form-group">
                 <label for="from_currency">From Currency</label>
                 <select id="from_currency" name="from_currency" class="form-select">
-                    {# Group for commonly used currencies #}
-                    <optgroup label="Main Currencies">
-                        <option value="JPY" selected>Japanese Yen (JPY)</option>
-                        <option value="TWD">Taiwan Dollar (TWD)</option>
-                    </optgroup>
-                    {# Group for major global currencies #}
-                    <optgroup label="Major World Currencies">
-                        <option value="USD">US Dollar (USD)</option>
-                        <option value="EUR">Euro (EUR)</option>
-                        <option value="GBP">British Pound (GBP)</option>
-                        <option value="AUD">Australian Dollar (AUD)</option>
-                        <option value="CAD">Canadian Dollar (CAD)</option>
-                        <option value="CHF">Swiss Franc (CHF)</option>
-                    </optgroup>
-                    {# Group for Asian regional currencies #}
-                    <optgroup label="Asian Currencies">
-                        <option value="CNY">Chinese Yuan (CNY)</option>
-                        <option value="HKD">Hong Kong Dollar (HKD)</option>
-                        <option value="KRW">Korean Won (KRW)</option>
-                        <option value="SGD">Singapore Dollar (SGD)</option>
-                    </optgroup>
+                    {% load custom_filters %}
+                    {% for code in currency_codes %}
+                        {% with curr=currencies|dict_get:code %}
+                        <option value="{{ code }}" {% if code == 'JPY' %}selected{% endif %}>
+                            {{ curr.flag }} {{ curr.name }} ({{ code }})
+                        </option>
+                        {% endwith %}
+                    {% endfor %}
                 </select>
             </div>
             
@@ -65,27 +52,13 @@
             <div class="form-group">
                 <label for="to_currency">To Currency</label>
                 <select id="to_currency" name="to_currency" class="form-select">
-                    {# Group for commonly used currencies #}
-                    <optgroup label="Main Currencies">
-                        <option value="TWD" selected>Taiwan Dollar (TWD)</option>
-                        <option value="JPY">Japanese Yen (JPY)</option>
-                    </optgroup>
-                    {# Group for major global currencies #}
-                    <optgroup label="Major World Currencies">
-                        <option value="USD">US Dollar (USD)</option>
-                        <option value="EUR">Euro (EUR)</option>
-                        <option value="GBP">British Pound (GBP)</option>
-                        <option value="AUD">Australian Dollar (AUD)</option>
-                        <option value="CAD">Canadian Dollar (CAD)</option>
-                        <option value="CHF">Swiss Franc (CHF)</option>
-                    </optgroup>
-                    {# Group for Asian regional currencies #}
-                    <optgroup label="Asian Currencies">
-                        <option value="CNY">Chinese Yuan (CNY)</option>
-                        <option value="HKD">Hong Kong Dollar (HKD)</option>
-                        <option value="KRW">Korean Won (KRW)</option>
-                        <option value="SGD">Singapore Dollar (SGD)</option>
-                    </optgroup>
+                    {% for code in currency_codes %}
+                        {% with curr=currencies|dict_get:code %}
+                        <option value="{{ code }}" {% if code == 'USD' %}selected{% endif %}>
+                            {{ curr.flag }} {{ curr.name }} ({{ code }})
+                        </option>
+                        {% endwith %}
+                    {% endfor %}
                 </select>
             </div>
             

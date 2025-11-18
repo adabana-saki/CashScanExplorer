@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Grading Queue - CashScanExplorer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        color: #333;
+        margin: 0;
+    }
+
+    .count-badge {
+        background: #f39c12;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    .section {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .filters {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #333;
+        font-size: 13px;
+    }
+
+    .filter-group select {
+        width: 100%;
+        padding: 8px;
+        border: 2px solid #e0e0e0;
+        border-radius: 5px;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table th,
+    .table td {
+        padding: 15px 12px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .table th {
+        background: #f5f5f5;
+        font-weight: 600;
+        color: #333;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .table tr:hover {
+        background: #f9f9f9;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .assignment-title {
+        color: #667eea;
+        font-weight: 500;
+    }
+
+    .time-ago {
+        color: #666;
+        font-size: 13px;
+    }
+
+    .classroom-tag {
+        background: #e7f3ff;
+        color: #0066cc;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+    }
+
+    .empty-state svg {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+    }
+
+    .empty-state h2 {
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .stats-bar {
+        display: flex;
+        gap: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+
+    .stat-item {
+        flex: 1;
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 32px;
+        font-weight: bold;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-top: 5px;
+    }
+
+    .priority-high {
+        border-left: 4px solid #dc3545;
+    }
+
+    .priority-medium {
+        border-left: 4px solid #ffc107;
+    }
+
+    .priority-low {
+        border-left: 4px solid #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>✍️ Grading Queue</h1>
+        <div>
+            <span class="count-badge">{{ submissions.count }} pending</span>
+        </div>
+    </div>
+
+    {% if submissions %}
+        <div class="section">
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-number">{{ submissions.count }}</div>
+                    <div class="stat-label">Total Pending</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ submissions.count }}</div>
+                    <div class="stat-label">This Week</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">—</div>
+                    <div class="stat-label">Avg. Score</div>
+                </div>
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Assignment</th>
+                        <th>Classroom</th>
+                        <th>Submitted</th>
+                        <th>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for submission in submissions %}
+                    <tr>
+                        <td>
+                            <div class="student-name">{{ submission.student.get_full_name|default:submission.student.username }}</div>
+                            <div style="font-size: 12px; color: #999;">{{ submission.student.username }}</div>
+                        </td>
+                        <td>
+                            <div class="assignment-title">{{ submission.assignment.title }}</div>
+                            <div style="font-size: 12px; color: #666;">{{ submission.assignment.get_assignment_type_display }}</div>
+                        </td>
+                        <td>
+                            <span class="classroom-tag">{{ submission.assignment.classroom.name }}</span>
+                        </td>
+                        <td>
+                            <div class="time-ago">{{ submission.submitted_at|timesince }} ago</div>
+                            <div style="font-size: 11px; color: #999;">{{ submission.submitted_at|date:"M d, Y g:i A" }}</div>
+                        </td>
+                        <td>
+                            {% if submission.assignment.difficulty == 'easy' %}
+                                <span style="color: #28a745;">●</span> Easy
+                            {% elif submission.assignment.difficulty == 'medium' %}
+                                <span style="color: #ffc107;">●</span> Medium
+                            {% elif submission.assignment.difficulty == 'hard' %}
+                                <span style="color: #dc3545;">●</span> Hard
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'app:teacher_grade_submission' submission.id %}" class="btn btn-primary">Grade Now</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="section">
+            <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2>All caught up!</h2>
+                <p>There are no submissions waiting for grading at this time.</p>
+                <a href="{% url 'app:teacher_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

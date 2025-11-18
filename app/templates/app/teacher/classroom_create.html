@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Classroom - CashScanExplorer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+
+    .form-card {
+        background: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 5px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+        font-size: 16px;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        margin-right: 10px;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 30px;
+    }
+
+    h1 {
+        color: #333;
+        margin-bottom: 30px;
+    }
+
+    .help-text {
+        font-size: 13px;
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <div class="form-card">
+        <h1>📚 Create New Classroom</h1>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="name">Classroom Name *</label>
+                <input type="text" id="name" name="name" required placeholder="e.g., Math 101 - Period 1">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="grade_level">Grade Level</label>
+                    <select id="grade_level" name="grade_level">
+                        <option value="">Select grade...</option>
+                        {% for grade in grade_levels %}
+                        <option value="{{ grade }}">Grade {{ grade }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Subject</label>
+                    <input type="text" id="subject" name="subject" placeholder="e.g., Mathematics, Economics">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="school_year">School Year</label>
+                <input type="text" id="school_year" name="school_year" value="{{ default_school_year }}" placeholder="e.g., 2024-2025">
+                <div class="help-text">Academic year for this classroom</div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" placeholder="Optional description for this classroom..."></textarea>
+                <div class="help-text">Add any notes or information about this class</div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'app:teacher_dashboard' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Classroom</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

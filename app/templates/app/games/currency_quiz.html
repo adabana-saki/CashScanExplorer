@@ -1,0 +1,413 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block title %}Currency Quiz - Learn About World Currencies{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quiz-container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    .quiz-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .quiz-header h1 {
+        color: #2c3e50;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+
+    .score-board {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        color: white;
+    }
+
+    .score-item {
+        text-align: center;
+    }
+
+    .score-item .label {
+        font-size: 0.9em;
+        opacity: 0.9;
+    }
+
+    .score-item .value {
+        font-size: 2em;
+        font-weight: bold;
+        margin-top: 5px;
+    }
+
+    .question-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 30px;
+        margin-bottom: 30px;
+        min-height: 300px;
+    }
+
+    .question-text {
+        font-size: 1.5em;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .question-hint {
+        font-size: 1em;
+        color: #7f8c8d;
+        margin-bottom: 30px;
+        padding: 10px;
+        background: white;
+        border-radius: 5px;
+        border-left: 4px solid #3498db;
+    }
+
+    .options-container {
+        display: grid;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .option-button {
+        padding: 20px;
+        font-size: 1.1em;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: left;
+    }
+
+    .option-button:hover {
+        border-color: #3498db;
+        background: #ebf5fb;
+        transform: translateX(5px);
+    }
+
+    .option-button.selected {
+        border-color: #3498db;
+        background: #3498db;
+        color: white;
+    }
+
+    .option-button.correct {
+        border-color: #27ae60;
+        background: #27ae60;
+        color: white;
+    }
+
+    .option-button.incorrect {
+        border-color: #e74c3c;
+        background: #e74c3c;
+        color: white;
+    }
+
+    .option-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    .feedback-panel {
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 10px;
+        display: none;
+    }
+
+    .feedback-panel.correct {
+        background: #d5f4e6;
+        border: 2px solid #27ae60;
+        display: block;
+    }
+
+    .feedback-panel.incorrect {
+        background: #fadbd8;
+        border: 2px solid #e74c3c;
+        display: block;
+    }
+
+    .feedback-title {
+        font-size: 1.3em;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .feedback-explanation {
+        font-size: 1em;
+        line-height: 1.6;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+
+    .btn {
+        padding: 15px 40px;
+        font-size: 1.1em;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+        background: #ecf0f1;
+        color: #2c3e50;
+    }
+
+    .btn-secondary:hover {
+        background: #bdc3c7;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 40px;
+        font-size: 1.2em;
+        color: #7f8c8d;
+    }
+
+    .celebration {
+        text-align: center;
+        font-size: 3em;
+        margin: 20px 0;
+        animation: bounce 0.5s ease;
+    }
+
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .currency-flag {
+        font-size: 2em;
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <div class="quiz-header">
+        <h1>💰 Currency Quiz 💱</h1>
+        <p>Test your knowledge about world currencies!</p>
+    </div>
+
+    <div class="score-board">
+        <div class="score-item">
+            <div class="label">Points</div>
+            <div class="value" id="totalPoints">0</div>
+        </div>
+        <div class="score-item">
+            <div class="label">Correct</div>
+            <div class="value" id="correctCount">0</div>
+        </div>
+        <div class="score-item">
+            <div class="label">Streak</div>
+            <div class="value" id="streakCount">0</div>
+        </div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+        <div class="loading" id="loadingText">Loading question...</div>
+
+        <div id="questionContent" style="display: none;">
+            <div class="question-text" id="questionText"></div>
+            <div class="question-hint" id="questionHint"></div>
+            <div class="options-container" id="optionsContainer"></div>
+
+            <div class="feedback-panel" id="feedbackPanel">
+                <div class="feedback-title" id="feedbackTitle"></div>
+                <div class="feedback-explanation" id="feedbackExplanation"></div>
+                <div class="celebration" id="celebration"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-secondary" onclick="goHome()">🏠 Home</button>
+        <button class="btn btn-primary" id="nextButton" onclick="loadNextQuestion()" style="display: none;">
+            Next Question →
+        </button>
+    </div>
+</div>
+
+<script>
+let currentQuestion = null;
+let totalPoints = 0;
+let correctCount = 0;
+let streakCount = 0;
+let questionCount = 0;
+
+// Load first question on page load
+window.addEventListener('DOMContentLoaded', () => {
+    loadNextQuestion();
+});
+
+async function loadNextQuestion() {
+    const loadingText = document.getElementById('loadingText');
+    const questionContent = document.getElementById('questionContent');
+    const feedbackPanel = document.getElementById('feedbackPanel');
+    const nextButton = document.getElementById('nextButton');
+
+    // Reset UI
+    loadingText.style.display = 'block';
+    questionContent.style.display = 'none';
+    feedbackPanel.classList.remove('correct', 'incorrect');
+    feedbackPanel.style.display = 'none';
+    nextButton.style.display = 'none';
+
+    try {
+        const response = await fetch('/app/games/quiz/generate/?type=random');
+        const data = await response.json();
+
+        if (data.success) {
+            currentQuestion = data.question;
+            displayQuestion(currentQuestion);
+            loadingText.style.display = 'none';
+            questionContent.style.display = 'block';
+            questionCount++;
+        } else {
+            alert('Failed to load question. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error loading question:', error);
+        alert('Error loading question. Please check your connection.');
+    }
+}
+
+function displayQuestion(question) {
+    document.getElementById('questionText').textContent = question.question;
+    document.getElementById('questionHint').textContent = '💡 ' + question.hint;
+
+    const optionsContainer = document.getElementById('optionsContainer');
+    optionsContainer.innerHTML = '';
+
+    question.options.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.className = 'option-button';
+        button.textContent = option;
+        button.onclick = () => selectAnswer(option, button);
+        optionsContainer.appendChild(button);
+    });
+}
+
+async function selectAnswer(selectedOption, buttonElement) {
+    const isCorrect = selectedOption === currentQuestion.correct_answer;
+
+    // Disable all buttons
+    const allButtons = document.querySelectorAll('.option-button');
+    allButtons.forEach(btn => btn.disabled = true);
+
+    // Highlight correct/incorrect
+    allButtons.forEach(btn => {
+        if (btn.textContent === currentQuestion.correct_answer) {
+            btn.classList.add('correct');
+        } else if (btn === buttonElement && !isCorrect) {
+            btn.classList.add('incorrect');
+        }
+    });
+
+    // Update score
+    if (isCorrect) {
+        correctCount++;
+        streakCount++;
+        totalPoints += 10;
+
+        document.getElementById('celebration').textContent = ['🎉', '🌟', '✨', '🏆', '🎊'][Math.floor(Math.random() * 5)];
+    } else {
+        streakCount = 0;
+        totalPoints += 2; // Participation points
+    }
+
+    updateScoreboard();
+
+    // Show feedback
+    const feedbackPanel = document.getElementById('feedbackPanel');
+    feedbackPanel.classList.add(isCorrect ? 'correct' : 'incorrect');
+    document.getElementById('feedbackTitle').textContent = isCorrect ? '✅ Correct!' : '❌ Incorrect';
+    document.getElementById('feedbackExplanation').textContent = currentQuestion.explanation;
+
+    // Show next button
+    document.getElementById('nextButton').style.display = 'inline-block';
+
+    // Submit answer to server
+    try {
+        await fetch('/app/games/quiz/submit/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                is_correct: isCorrect,
+                question_type: currentQuestion.type
+            })
+        });
+    } catch (error) {
+        console.error('Error submitting answer:', error);
+    }
+}
+
+function updateScoreboard() {
+    document.getElementById('totalPoints').textContent = totalPoints;
+    document.getElementById('correctCount').textContent = correctCount;
+    document.getElementById('streakCount').textContent = streakCount;
+}
+
+function goHome() {
+    if (questionCount > 0) {
+        const message = `Great job! You answered ${questionCount} questions and earned ${totalPoints} points!`;
+        if (confirm(message + '\n\nReturn to home?')) {
+            window.location.href = '/app/';
+        }
+    } else {
+        window.location.href = '/app/';
+    }
+}
+
+// Get CSRF token for Django
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

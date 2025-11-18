@@ -1,68 +1,325 @@
 {% extends 'app/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
-{% block title %}Types of Money - Cash Scan Explore{% endblock %}
+{% block title %}World Currencies - Cash Scan Explore{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'app/styles/money.css' %}">
+<style>
+    .content-wrapper {
+        max-width: 1200px;
+        margin: 50px auto;
+        padding: 30px;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .page-header h1 {
+        color: #2c3e50;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+
+    .page-header p {
+        color: #7f8c8d;
+        font-size: 1.2em;
+    }
+
+    .currency-selector {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .selector-title {
+        font-size: 1.3em;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .currency-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .currency-option {
+        padding: 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .currency-option:hover {
+        border-color: #3498db;
+        background: #ebf5fb;
+        transform: translateY(-3px);
+    }
+
+    .currency-option.active {
+        border-color: #3498db;
+        background: #3498db;
+        color: white;
+    }
+
+    .currency-option .flag {
+        font-size: 3em;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .currency-option .code {
+        font-size: 1.1em;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .currency-option .name {
+        font-size: 0.9em;
+        opacity: 0.8;
+    }
+
+    .currency-details {
+        background: white;
+        border-radius: 15px;
+        padding: 40px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    .details-header {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #3498db;
+    }
+
+    .details-header .flag {
+        font-size: 4em;
+    }
+
+    .details-header .info .name {
+        font-size: 2em;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .details-header .info .country {
+        font-size: 1.2em;
+        color: #7f8c8d;
+    }
+
+    .details-header .symbol {
+        margin-left: auto;
+        font-size: 3em;
+        color: #3498db;
+        font-weight: bold;
+    }
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .detail-section {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 10px;
+    }
+
+    .detail-section .label {
+        font-size: 1em;
+        color: #7f8c8d;
+        margin-bottom: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .denominations-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .denomination-badge {
+        padding: 8px 16px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 20px;
+        font-size: 1em;
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .fun-facts {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+    }
+
+    .fun-facts .title {
+        font-size: 1.5em;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    .fun-facts ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .fun-facts li {
+        margin-bottom: 15px;
+        padding-left: 30px;
+        position: relative;
+        line-height: 1.6;
+    }
+
+    .fun-facts li:before {
+        content: "💡";
+        position: absolute;
+        left: 0;
+        font-size: 1.2em;
+    }
+
+    .image-recognition-badge {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #27ae60;
+        color: white;
+        border-radius: 20px;
+        font-weight: 600;
+        margin-top: 20px;
+    }
+
+    .region-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #ecf0f1;
+        border-radius: 20px;
+        color: #2c3e50;
+        font-weight: 600;
+        margin-top: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .details-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .details-header {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .details-header .symbol {
+            margin-left: 0;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
-    <h1 class="page-title">Currency Information</h1>
-    <div class="currency-container">
-        <!-- Currency Selection Section -->
-        <div class="currency-selectors">
-            <div class="currency-dropdown">
-                <button class="currency-btn jpy-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Japanese Yen (JPY)
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    {% for value in currency_types.JPY.denominations %}
-                        <li><a class="dropdown-item" href="#" onclick="setCurrency('jpy{{ value }}')">{{ value }} JPY</a></li>
-                    {% endfor %}
-                </ul>
-            </div>
+    <div class="page-header">
+        <h1>🌍 World Currencies</h1>
+        <p>Explore and learn about currencies from around the world</p>
+    </div>
 
-            <div class="currency-dropdown">
-                <button class="currency-btn twd-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Taiwan Dollar (TWD)
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    {% for value in currency_types.TWD.denominations %}
-                        <li><a class="dropdown-item" href="#" onclick="setCurrency('twd{{ value }}')">{{ value }} TWD</a></li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-
-        <!-- Currency Display Card -->
-        <div class="currency-card">
-            <div class="currency-image">
-                <img id="currencyImage" 
-                     src="{% static 'app/assets/JPY/1.jpg' %}" 
-                     alt="Currency"
-                     data-placeholder="{% static 'app/assets/placeholder.jpg' %}">
-            </div>
-            <div class="currency-info">
-                <h2 id="currencyTitle">1 Japanese Yen</h2>
-                <p id="currencyText" class="currency-description">
-                    <!-- Description will be set by JavaScript -->
-                </p>
-            </div>
+    <div class="currency-selector">
+        <div class="selector-title">Select a Currency</div>
+        <div class="currency-grid">
+            {% for code in currency_codes %}
+                {% with curr=currencies|dict_get:code %}
+                <div class="currency-option {% if code == selected_currency %}active{% endif %}"
+                     onclick="window.location.href='/app/money/?currency={{ code }}'">
+                    <span class="flag">{{ curr.flag }}</span>
+                    <div class="code">{{ code }}</div>
+                    <div class="name">{{ curr.name }}</div>
+                </div>
+                {% endwith %}
+            {% endfor %}
         </div>
     </div>
+
+    {% if selected_info %}
+    <div class="currency-details">
+        <div class="details-header">
+            <div class="flag">{{ selected_info.flag }}</div>
+            <div class="info">
+                <div class="name">{{ selected_info.name }}</div>
+                <div class="country">{{ selected_info.country }}</div>
+                <span class="region-badge">{{ selected_info.region }}</span>
+            </div>
+            <div class="symbol">{{ selected_info.symbol }}</div>
+        </div>
+
+        <div class="details-grid">
+            {% if selected_info.denominations %}
+                <div class="detail-section">
+                    <div class="label">💰 Coins</div>
+                    <div class="denominations-list">
+                        {% for coin in selected_info.denominations.coins %}
+                        <span class="denomination-badge">{{ selected_info.symbol }}{{ coin }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="label">💵 Bills / Banknotes</div>
+                    <div class="denominations-list">
+                        {% for bill in selected_info.denominations.bills %}
+                        <span class="denomination-badge">{{ selected_info.symbol }}{{ bill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if selected_info.fun_facts %}
+        <div class="fun-facts">
+            <div class="title">💡 Fun Facts about {{ selected_info.name }}</div>
+            <ul>
+                {% for fact in selected_info.fun_facts %}
+                <li>{{ fact }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if selected_info.has_image_recognition %}
+        <div class="image-recognition-badge">
+            ✨ Image Recognition Available - Try scanning this currency!
+        </div>
+        {% endif %}
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/app/games/quiz/" style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 1.1em;">
+                🎮 Test Your Knowledge in Quiz!
+            </a>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    const STATIC_URL = "{% static 'app/assets/' %}";
+// Can add interactive features here if needed
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
-<script src="{% static 'app/scripts/money.js' %}"></script>
 {% endblock %}

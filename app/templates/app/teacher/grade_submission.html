@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Grade Submission - CashScanExplorer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+
+    .submission-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+
+    .submission-header h1 {
+        margin: 0 0 10px 0;
+    }
+
+    .submission-meta {
+        display: flex;
+        gap: 30px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .section-header {
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .section h2 {
+        margin: 0;
+        color: #333;
+    }
+
+    .answer-item {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+    }
+
+    .question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 15px;
+    }
+
+    .question-number {
+        font-weight: bold;
+        color: #667eea;
+        font-size: 16px;
+    }
+
+    .question-text {
+        color: #333;
+        font-size: 15px;
+        margin: 10px 0 15px 0;
+        line-height: 1.6;
+    }
+
+    .student-answer {
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+        border-left: 3px solid #0066cc;
+    }
+
+    .answer-label {
+        font-weight: 600;
+        color: #666;
+        font-size: 13px;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+
+    .answer-text {
+        color: #333;
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    .correct-answer-box {
+        background: #d4edda;
+        padding: 12px 15px;
+        border-radius: 5px;
+        margin: 10px 0;
+        border-left: 3px solid #28a745;
+    }
+
+    .grading-controls {
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 15px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 15px;
+        align-items: start;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    input[type="number"],
+    textarea {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 5px;
+        font-size: 14px;
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    input:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+        font-size: 16px;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #218838;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #f0f0f0;
+    }
+
+    .score-summary {
+        background: #667eea;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .score-display {
+        font-size: 48px;
+        font-weight: bold;
+    }
+
+    .score-label {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-top: 5px;
+    }
+
+    .badge {
+        padding: 5px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-correct {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-incorrect {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .badge-partial {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Submission Header -->
+    <div class="submission-header">
+        <h1>Grade Submission</h1>
+        <div class="submission-meta">
+            <div class="meta-item">
+                <strong>Student:</strong> {{ submission.student.get_full_name|default:submission.student.username }}
+            </div>
+            <div class="meta-item">
+                <strong>Assignment:</strong> {{ submission.assignment.title }}
+            </div>
+            <div class="meta-item">
+                <strong>Submitted:</strong> {{ submission.submitted_at|date:"M d, Y g:i A" }}
+            </div>
+            <div class="meta-item">
+                <strong>Time Spent:</strong>
+                {% if submission.time_spent_seconds %}
+                    {{ submission.time_spent_seconds|floatformat:0 }} seconds
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- Answers Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>📝 Student Answers ({{ answers.count }} questions)</h2>
+            </div>
+
+            {% for answer in answers %}
+            <div class="answer-item">
+                <div class="question-header">
+                    <div>
+                        <span class="question-number">Question {{ answer.question.question_order }}</span>
+                        <span class="badge" style="margin-left: 10px;">{{ answer.question.points }} pts</span>
+                    </div>
+                    <div>
+                        <span class="badge">{{ answer.question.get_question_type_display }}</span>
+                    </div>
+                </div>
+
+                <div class="question-text">{{ answer.question.question_text }}</div>
+
+                <!-- Student's Answer -->
+                <div class="student-answer">
+                    <div class="answer-label">Student's Answer:</div>
+                    <div class="answer-text">{{ answer.answer_text }}</div>
+                </div>
+
+                <!-- Correct Answer -->
+                {% if answer.question.correct_answer %}
+                <div class="correct-answer-box">
+                    <div class="answer-label" style="color: #155724;">Correct Answer:</div>
+                    <div class="answer-text" style="color: #155724;">{{ answer.question.correct_answer }}</div>
+                </div>
+                {% endif %}
+
+                <!-- Grading Controls -->
+                <div class="grading-controls">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="points_{{ answer.id }}">Points Earned</label>
+                            <input type="number"
+                                   id="points_{{ answer.id }}"
+                                   name="points_{{ answer.id }}"
+                                   value="{{ answer.points_earned|default:0 }}"
+                                   min="0"
+                                   max="{{ answer.question.points }}"
+                                   required>
+                            <div class="help-text">Max: {{ answer.question.points }}</div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox"
+                                       id="correct_{{ answer.id }}"
+                                       name="correct_{{ answer.id }}"
+                                       {% if answer.is_correct %}checked{% endif %}>
+                                <label for="correct_{{ answer.id }}">Mark as correct</label>
+                            </div>
+
+                            <label for="comment_{{ answer.id }}" style="margin-top: 15px;">Teacher Comment (Optional)</label>
+                            <textarea id="comment_{{ answer.id }}"
+                                     name="comment_{{ answer.id }}"
+                                     placeholder="Provide feedback to the student...">{{ answer.teacher_comment }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Overall Feedback Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>💬 Overall Feedback</h2>
+            </div>
+
+            <div class="form-group">
+                <label for="overall_feedback">Feedback for Student</label>
+                <textarea id="overall_feedback"
+                         name="overall_feedback"
+                         style="min-height: 120px;"
+                         placeholder="Provide overall feedback on the student's performance...">{{ submission.feedback }}</textarea>
+                <div class="help-text">This feedback will be visible to the student after grading</div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="section">
+            <div class="form-actions">
+                <div>
+                    <a href="{% url 'app:teacher_grading_queue' %}" class="btn btn-secondary">← Back to Queue</a>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <span style="color: #666; align-self: center;">Max Points: {{ submission.assignment.max_points }}</span>
+                    <button type="submit" class="btn btn-success">✓ Submit Grades</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
