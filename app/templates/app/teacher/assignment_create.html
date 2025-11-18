@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Assignment - CashScanExplorer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+
+    .form-card {
+        background: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .required::after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 5px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+    }
+
+    .help-text {
+        font-size: 13px;
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+        font-size: 16px;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        margin-right: 10px;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #f0f0f0;
+    }
+
+    .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #667eea;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .info-box p {
+        margin: 0;
+        color: #333;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <div class="form-card">
+        <h1>📝 Create New Assignment</h1>
+        <p class="subtitle">Create a new assignment for your students. You'll be able to add questions after creating the assignment.</p>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Classroom Selection -->
+            <div class="form-group">
+                <label for="classroom" class="required">Classroom</label>
+                <select id="classroom" name="classroom" required>
+                    <option value="">Select a classroom...</option>
+                    {% for classroom in classrooms %}
+                    <option value="{{ classroom.id }}">{{ classroom.name }} ({{ classroom.students.count }} students)</option>
+                    {% endfor %}
+                </select>
+                <div class="help-text">Choose which classroom this assignment is for</div>
+            </div>
+
+            <!-- Basic Information -->
+            <div class="form-group">
+                <label for="title" class="required">Assignment Title</label>
+                <input type="text" id="title" name="title" required placeholder="e.g., Currency Exchange Quiz #1">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" placeholder="Brief description of the assignment..."></textarea>
+                <div class="help-text">Optional: Provide context for students</div>
+            </div>
+
+            <!-- Assignment Configuration -->
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label for="assignment_type" class="required">Type</label>
+                    <select id="assignment_type" name="assignment_type" required>
+                        {% for value, label in assignment_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="difficulty" class="required">Difficulty</label>
+                    <select id="difficulty" name="difficulty" required>
+                        {% for value, label in difficulties %}
+                        <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="target_grade">Target Grade</label>
+                    <input type="number" id="target_grade" name="target_grade" min="1" max="12" placeholder="e.g., 8">
+                    <div class="help-text">Grade level (1-12)</div>
+                </div>
+            </div>
+
+            <!-- Scoring & Timing -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="max_points">Maximum Points</label>
+                    <input type="number" id="max_points" name="max_points" value="100" min="1">
+                    <div class="help-text">Total points for the assignment</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="due_date">Due Date</label>
+                    <input type="date" id="due_date" name="due_date">
+                    <div class="help-text">Optional deadline</div>
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="form-group">
+                <label for="instructions">Instructions for Students</label>
+                <textarea id="instructions" name="instructions" placeholder="Detailed instructions on how to complete this assignment..."></textarea>
+                <div class="help-text">Provide step-by-step guidance for students</div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <p><strong>Next Step:</strong> After creating this assignment, you'll be able to add questions, configure grading criteria, and publish it to your students.</p>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="{% url 'app:teacher_dashboard' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Assignment</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
